@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ইনস্টাগ্রাম ভিডিও ডাউনলোডার</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #1c1e21;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top to see content sooner */
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 25px 35px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 650px;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        header h1 {
+            background: -webkit-linear-gradient(45deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+            margin-bottom: 10px;
+            font-size: 2.2em;
+            font-weight: 700;
+        }
+
+        header p {
+            color: #606770;
+            margin-bottom: 25px;
+            font-size: 1.05em;
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column; /* Stack input and button on smaller screens */
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        #instagramUrl {
+            flex-grow: 1;
+            padding: 14px 18px;
+            border: 1px solid #ccd0d5;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        #instagramUrl:focus {
+            border-color: #962fbf; /* Instagram purple */
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(150, 47, 191, 0.2);
+        }
+
+        #downloadBtn {
+            padding: 14px 22px;
+            background: linear-gradient(45deg, #fa7e1e, #d62976);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.05em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+        }
+
+        #downloadBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(214, 41, 118, 0.3);
+            background: linear-gradient(45deg, #d62976, #fa7e1e);
+        }
+
+        #downloadBtn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(214, 41, 118, 0.2);
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #d62976; /* Instagram Pink */
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            animation: spin 0.8s linear infinite;
+            margin: 25px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-messages .error-text {
+            background-color: #ffebee; /* Light red */
+            color: #c62828; /* Dark red */
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #ef9a9a;
+            font-size: 0.95em;
+        }
+
+        .results-section {
+            margin-top: 20px;
+            text-align: left; /* Align content within results to left */
+        }
+
+        .result-item {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.04);
+        }
+        
+        .result-item-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center; /* Center thumbnail and info */
+        }
+
+        .thumbnail-container {
+            width: 100%;
+            max-width: 280px; /* Limit thumbnail width */
+            margin: 0 auto; /* Center thumbnail */
+        }
+
+        .video-thumbnail {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            display: block; /* Remove extra space below image */
+        }
+
+        .video-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center title and button */
+            width: 100%;
+        }
+
+        .video-title {
+            font-weight: 600;
+            color: #1c1e21;
+            margin-bottom: 12px;
+            font-size: 1.05em;
+            line-height: 1.4;
+            text-align: center; /* Center title text */
+            word-break: break-word;
+        }
+
+        .download-link-btn {
+            display: inline-block;
+            padding: 12px 28px;
+            background-color: #25D366; /* WhatsApp Green (or any attractive green) */
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1em;
+            transition: background-color 0.2s ease, transform 0.15s ease;
+            text-align: center;
+        }
+
+        .download-link-btn:hover {
+            background-color: #1DAE54;
+            transform: translateY(-1px);
+        }
+
+        footer {
+            margin-top: 35px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 0.85em;
+            color: #606770;
+        }
+
+        footer p {
+            margin: 6px 0;
+        }
+        
+        /* Responsive adjustments */
+        @media (min-width: 600px) { /* For slightly larger screens, put input and button side-by-side */
+            .input-section {
+                flex-direction: row;
+            }
+            .result-item-content {
+                flex-direction: row; /* Thumbnail beside info for wider screens */
+                text-align: left; /* Align text left when side-by-side */
+            }
+            .thumbnail-container {
+                width: 180px; /* Fixed width for thumbnail */
+                flex-shrink: 0; /* Prevent thumbnail from shrinking */
+                margin: 0; /* Reset margin */
+            }
+             .video-info {
+                align-items: flex-start; /* Align info to left */
+            }
+            .video-title {
+                text-align: left; /* Align title text left */
+            }
+        }
+
+
+        @media (max-width: 480px) {
+            .container {
+                margin-top: 15px;
+                padding: 20px 25px;
+            }
+            header h1 {
+                font-size: 1.9em;
+            }
+            header p {
+                font-size: 0.95em;
+            }
+             #instagramUrl, #downloadBtn {
+                font-size: 0.95em;
+                padding: 12px 15px;
+            }
+             #downloadBtn {
+                padding: 12px 18px;
+            }
+            .result-item {
+                padding: 15px;
+            }
+            .download-link-btn {
+                padding: 10px 22px;
+                font-size: 0.95em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ইনস্টাগ্রাম ভিডিও ডাউনলোডার</h1>
+            <p>আপনার পছন্দের ইনস্টাগ্রাম ভিডিও অথবা রিলস সহজেই ডাউনলোড করুন। লিঙ্ক পেস্ট করুন এবং ডাউনলোড বাটনে ক্লিক করুন।</p>
+        </header>
+        <main>
+            <div class="input-section">
+                <input type="text" id="instagramUrl" placeholder="এখানে ইনস্টাগ্রাম ভিডিওর লিঙ্ক পেস্ট করুন">
+                <button id="downloadBtn">ডাউনলোড করুন</button>
+            </div>
+            <div id="loader" class="loader" style="display: none;"></div>
+            <div id="errorMessages" class="error-messages"></div>
+            <div id="results" class="results-section">
+                </div>
+        </main>
+        <footer>
+            <p id="joinInfo"></p>
+            <p id="supportInfo"></p>
+            <p>&copy; <span id="year"></span> @SHOHAG VAII । সর্বস্বত্ব সংরক্ষিত।</p>
+            <p style="font-size: 0.8em; color: #90949c;">দয়া করে মনে রাখবেন: এই API (`bj-devs.serv00.net`) একটি থার্ড-পার্টি পরিষেবা। এর প্রাপ্যতা এবং কার্যকারিতা পরিবর্তন হতে পারে। সর্বদা কপিরাইট আইন মেনে চলুন।</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const downloadBtn = document.getElementById('downloadBtn');
+            const instagramUrlInput = document.getElementById('instagramUrl');
+            const resultsDiv = document.getElementById('results');
+            const errorMessagesDiv = document.getElementById('errorMessages');
+            const loader = document.getElementById('loader');
+            const joinInfoP = document.getElementById('joinInfo');
+            const supportInfoP = document.getElementById('supportInfo');
+            document.getElementById('year').textContent = new Date().getFullYear();
+
+            downloadBtn.addEventListener('click', async () => {
+                const igUrl = instagramUrlInput.value.trim();
+                
+                // DEBUGGING: Log the URL to the console
+                console.log("Validating URL:", igUrl); 
+
+                if (!igUrl) {
+                    showError('অনুগ্রহ করে একটি ইনস্টাগ্রাম ভিডিও লিঙ্ক প্রবেশ করান।');
+                    return;
+                }
+
+                // Validate Instagram URL (basic check)
+                if (!isValidInstagramUrl(igUrl)) {
+                    showError('অনুগ্রহ করে একটি সঠিক ইনস্টাগ্রাম ভিডিও লিঙ্ক দিন (যেমন: https://www.instagram.com/reel/...)');
+                    return;
+                }
+
+                clearResultsAndErrors();
+                loader.style.display = 'block';
+                joinInfoP.textContent = ''; // Clear previous join/support info
+                supportInfoP.textContent = '';
+
+                // API URL (Provided by you)
+                const apiUrl = `https://bj-devs.serv00.net/ig-downloader/?url=${encodeURIComponent(igUrl)}`;
+
+                try {
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) {
+                        let errorData;
+                        try {
+                            errorData = await response.json();
+                        } catch (e) {
+                            // Ignore if error response is not JSON
+                        }
+                        if (errorData && errorData.message) {
+                            throw new Error(errorData.message);
+                        }
+                        throw new Error(`সার্ভার থেকে ত্রুটি: ${response.status} ${response.statusText}`);
+                    }
+                    const data = await response.json();
+
+                    loader.style.display = 'none';
+
+                    if (data.success && data.result && data.result.length > 0) {
+                        displayResults(data.result, data.join, data.support);
+                    } else if (data.message) { 
+                        showError(data.message || 'ভিডিও খুঁজে পাওয়া যায়নি বা কোনো ত্রুটি হয়েছে।');
+                    } else {
+                        showError('ভিডিও খুঁজে পাওয়া যায়নি বা কোনো অজানা ত্রুটি হয়েছে।');
+                    }
+                } catch (error) {
+                    loader.style.display = 'none';
+                    console.error('Error fetching video:', error);
+                    showError(`একটি ত্রুটি ঘটেছে: ${error.message}. অনুগ্রহ করে লিঙ্কটি পরীক্ষা করুন অথবা কিছুক্ষণ পর আবার চেষ্টা করুন।`);
+                }
+            });
+
+            function isValidInstagramUrl(url) {
+                // UPDATED Regular Expression:
+                const instagramRegex = /^(https?:\/\/)?(www\.)?instagram\.com\/(p|reel|tv|stories|videos)\/[a-zA-Z0-9\-_]+\/?([\?#].*)?$/;
+                // This regex now includes 'videos' as a possible path, and simplifies the ending.
+                // It matches:
+                // - Optional http/https
+                // - Optional www.
+                // - instagram.com/
+                // - p/ or reel/ or tv/ or stories/ or videos/
+                // - The post ID (alphanumeric, hyphen, underscore)
+                // - Optional trailing slash
+                // - Optional query string (starting with ?) or fragment (starting with #)
+                return instagramRegex.test(url);
+            }
+
+            function displayResults(results, joinText, supportText) {
+                resultsDiv.innerHTML = ''; // Clear previous results
+                let videoFound = false;
+                results.forEach(item => {
+                    if (item.type === 'video' && item.url) {
+                        videoFound = true;
+                        const resultItemDiv = document.createElement('div');
+                        resultItemDiv.classList.add('result-item');
+
+                        let thumbnailHtml = '';
+                        if (item.thumb) {
+                            thumbnailHtml = `
+                                <div class="thumbnail-container">
+                                    <img src="${item.thumb}" alt="ভিডিও থাম্বনেইল" class="video-thumbnail" onerror="this.style.display='none';">
+                                </div>
+                            `;
+                        }
+
+                        const videoTitle = item.filename ? item.filename.replace(/\.mp4$/i, '').replace(/[^a-zA-Z0-9\sঅ-ঔক-য়ًا-يÀ-ÖØ-öø-ÿ]/g, ' ').substring(0, 70) + (item.filename.length > 70 ? '...' : '') : 'ইনস্টাগ্রাম ভিডিও';
+                        
+                        const resultItemContent = document.createElement('div');
+                        resultItemContent.classList.add('result-item-content');
+
+                        resultItemContent.innerHTML = `
+                            ${thumbnailHtml}
+                            <div class="video-info">
+                                <p class="video-title">${videoTitle}</p>
+                                <a href="${item.url}" target="_blank" download="${videoTitle.replace(/\s+/g, '_') || 'instagram_video'}.mp4" class="download-link-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                    ডাউনলোড করুন
+                                </a>
+                            </div>
+                        `;
+                        resultItemDiv.appendChild(resultItemContent);
+                        resultsDiv.appendChild(resultItemDiv);
+                    }
+                });
+
+                if (!videoFound && results.length > 0 && results[0].type !== 'video') {
+                     showError('দুঃখিত, এই লিঙ্ক থেকে কোনো ভিডিও খুঁজে পাওয়া যায়নি। এটি ছবি বা অন্য কোনো ধরনের মিডিয়া হতে পারে যা বর্তমানে সমর্থিত নয়।');
+                } else if (!videoFound && results.length === 0) {
+                     showError('কোনো মিডিয়া খুঁজে পাওয়া যায়নি।');
+                }
+
+
+                if (joinText) {
+                    joinInfoP.textContent = `যোগাযোগ/সাপোর্ট: ${joinText}`;
+                }
+            }
+
+            function showError(message) {
+                errorMessagesDiv.innerHTML = `<p class="error-text">${message}</p>`;
+            }
+
+            function clearResultsAndErrors() {
+                resultsDiv.innerHTML = '';
+                errorMessagesDiv.innerHTML = '';
+            }
+        });
+    </script>
+</body>
+</html>
+
