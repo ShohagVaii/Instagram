@@ -279,146 +279,162 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const downloadBtn = document.getElementById('downloadBtn');
-            const instagramUrlInput = document.getElementById('instagramUrl');
-            const resultsDiv = document.getElementById('results');
-            const errorMessagesDiv = document.getElementById('errorMessages');
-            const loader = document.getElementById('loader');
-            const joinInfoP = document.getElementById('joinInfo');
-            const supportInfoP = document.getElementById('supportInfo');
-            document.getElementById('year').textContent = new Date().getFullYear();
+    const downloadBtn = document.getElementById('downloadBtn');
+    const instagramUrlInput = document.getElementById('instagramUrl');
+    const resultsDiv = document.getElementById('results');
+    const errorMessagesDiv = document.getElementById('errorMessages');
+    const loader = document.getElementById('loader');
+    const joinInfoP = document.getElementById('joinInfo');
+    const supportInfoP = document.getElementById('supportInfo');
+    document.getElementById('year').textContent = new Date().getFullYear();
 
-            downloadBtn.addEventListener('click', async () => {
-                const igUrl = instagramUrlInput.value.trim();
-                
-                // DEBUGGING: Log the URL to the console
-                console.log("Validating URL:", igUrl); 
+    downloadBtn.addEventListener('click', async () => {
+        const igUrl = instagramUrlInput.value.trim();
+        
+        console.log("Validating URL:", igUrl); 
 
-                if (!igUrl) {
-                    showError('অনুগ্রহ করে একটি ইনস্টাগ্রাম ভিডিও লিঙ্ক প্রবেশ করান।');
-                    return;
-                }
+        if (!igUrl) {
+            showError('অনুগ্রহ করে একটি ইনস্টাগ্রাম ভিডিও লিঙ্ক প্রবেশ করান।');
+            return;
+        }
 
-                // Validate Instagram URL (basic check)
-                if (!isValidInstagramUrl(igUrl)) {
-                    showError('অনুগ্রহ করে একটি সঠিক ইনস্টাগ্রাম ভিডিও লিঙ্ক দিন (যেমন: https://www.instagram.com/reel/...)');
-                    return;
-                }
+        if (!isValidInstagramUrl(igUrl)) {
+            showError('অনুগ্রহ করে একটি সঠিক ইনস্টাগ্রাম ভিডিও লিঙ্ক দিন (যেমন: https://www.instagram.com/reel/...)');
+            return;
+        }
 
-                clearResultsAndErrors();
-                loader.style.display = 'block';
-                joinInfoP.textContent = ''; // Clear previous join/support info
-                supportInfoP.textContent = '';
+        clearResultsAndErrors();
+        loader.style.display = 'block';
+        joinInfoP.textContent = '';
+        supportInfoP.textContent = '';
 
-                // API URL (Provided by you)
-                const apiUrl = `https://bj-devs.serv00.net/ig-downloader/?url=${encodeURIComponent(igUrl)}`;
+        // মূল API URL
+        const originalApiUrl = `https://bj-devs.serv00.net/ig-downloader/?url=${encodeURIComponent(igUrl)}`;
+        
+        // CORS প্রক্সি ব্যবহার (AllOrigins)
+        // সতর্কতা: এটি একটি থার্ড-পার্টি প্রক্সি এবং এর নির্ভরযোগ্যতা ও নিরাপত্তার নিশ্চয়তা নেই।
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(originalApiUrl)}`;
+        
+        const apiUrl = proxyUrl; // প্রক্সি করা URL ব্যবহার করছি
 
+        console.log("Fetching via API:", apiUrl); // কোন URL দিয়ে ডেটা আনা হচ্ছে তা দেখুন
+
+        try {
+            const response = await fetch(apiUrl); // প্রক্সি URL থেকে ডেটা আনা হচ্ছে
+            if (!response.ok) {
+                let errorData;
                 try {
-                    const response = await fetch(apiUrl);
-                    if (!response.ok) {
-                        let errorData;
-                        try {
-                            errorData = await response.json();
-                        } catch (e) {
-                            // Ignore if error response is not JSON
-                        }
-                        if (errorData && errorData.message) {
-                            throw new Error(errorData.message);
-                        }
-                        throw new Error(`সার্ভার থেকে ত্রুটি: ${response.status} ${response.statusText}`);
+                    // প্রক্সি অনেক সময় টেক্সট হিসেবে ত্রুটি ফেরত দিতে পারে, JSON হিসেবে নয়
+                    const textError = await response.text();
+                    console.error("Proxy/API Error Text:", textError);
+                    try {
+                       errorData = JSON.parse(textError); // যদি JSON হয় তাহলে পার্স করার চেষ্টা
+                    } catch (e) {
+                        // যদি JSON না হয়, তাহলে টেক্সট এরর ব্যবহার করুন
+                        throw new Error(`সার্ভার বা প্রক্সি থেকে ত্রুটি: ${response.status} - ${textError || response.statusText}`);
                     }
-                    const data = await response.json();
-
-                    loader.style.display = 'none';
-
-                    if (data.success && data.result && data.result.length > 0) {
-                        displayResults(data.result, data.join, data.support);
-                    } else if (data.message) { 
-                        showError(data.message || 'ভিডিও খুঁজে পাওয়া যায়নি বা কোনো ত্রুটি হয়েছে।');
-                    } else {
-                        showError('ভিডিও খুঁজে পাওয়া যায়নি বা কোনো অজানা ত্রুটি হয়েছে।');
-                    }
-                } catch (error) {
-                    loader.style.display = 'none';
-                    console.error('Error fetching video:', error);
-                    showError(`একটি ত্রুটি ঘটেছে: ${error.message}. অনুগ্রহ করে লিঙ্কটি পরীক্ষা করুন অথবা কিছুক্ষণ পর আবার চেষ্টা করুন।`);
-                }
-            });
-
-            function isValidInstagramUrl(url) {
-                // UPDATED Regular Expression:
-                const instagramRegex = /^(https?:\/\/)?(www\.)?instagram\.com\/(p|reel|tv|stories|videos)\/[a-zA-Z0-9\-_]+\/?([\?#].*)?$/;
-                // This regex now includes 'videos' as a possible path, and simplifies the ending.
-                // It matches:
-                // - Optional http/https
-                // - Optional www.
-                // - instagram.com/
-                // - p/ or reel/ or tv/ or stories/ or videos/
-                // - The post ID (alphanumeric, hyphen, underscore)
-                // - Optional trailing slash
-                // - Optional query string (starting with ?) or fragment (starting with #)
-                return instagramRegex.test(url);
-            }
-
-            function displayResults(results, joinText, supportText) {
-                resultsDiv.innerHTML = ''; // Clear previous results
-                let videoFound = false;
-                results.forEach(item => {
-                    if (item.type === 'video' && item.url) {
-                        videoFound = true;
-                        const resultItemDiv = document.createElement('div');
-                        resultItemDiv.classList.add('result-item');
-
-                        let thumbnailHtml = '';
-                        if (item.thumb) {
-                            thumbnailHtml = `
-                                <div class="thumbnail-container">
-                                    <img src="${item.thumb}" alt="ভিডিও থাম্বনেইল" class="video-thumbnail" onerror="this.style.display='none';">
-                                </div>
-                            `;
-                        }
-
-                        const videoTitle = item.filename ? item.filename.replace(/\.mp4$/i, '').replace(/[^a-zA-Z0-9\sঅ-ঔক-য়ًا-يÀ-ÖØ-öø-ÿ]/g, ' ').substring(0, 70) + (item.filename.length > 70 ? '...' : '') : 'ইনস্টাগ্রাম ভিডিও';
-                        
-                        const resultItemContent = document.createElement('div');
-                        resultItemContent.classList.add('result-item-content');
-
-                        resultItemContent.innerHTML = `
-                            ${thumbnailHtml}
-                            <div class="video-info">
-                                <p class="video-title">${videoTitle}</p>
-                                <a href="${item.url}" target="_blank" download="${videoTitle.replace(/\s+/g, '_') || 'instagram_video'}.mp4" class="download-link-btn">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                    ডাউনলোড করুন
-                                </a>
-                            </div>
-                        `;
-                        resultItemDiv.appendChild(resultItemContent);
-                        resultsDiv.appendChild(resultItemDiv);
-                    }
-                });
-
-                if (!videoFound && results.length > 0 && results[0].type !== 'video') {
-                     showError('দুঃখিত, এই লিঙ্ক থেকে কোনো ভিডিও খুঁজে পাওয়া যায়নি। এটি ছবি বা অন্য কোনো ধরনের মিডিয়া হতে পারে যা বর্তমানে সমর্থিত নয়।');
-                } else if (!videoFound && results.length === 0) {
-                     showError('কোনো মিডিয়া খুঁজে পাওয়া যায়নি।');
+                } catch (e) {
+                     // যদি উপরের কোনো একটি কাজ না করে
+                    throw new Error(`সার্ভার বা প্রক্সি থেকে ত্রুটি: ${response.status} ${response.statusText}`);
                 }
 
+                if (errorData && errorData.message) {
+                    throw new Error(errorData.message);
+                }
+                // যদি errorData.message না থাকে, তাহলে আগের মতো ফলব্যাক এরর
+                throw new Error(`সার্ভার বা প্রক্সি থেকে ত্রুটি: ${response.status} ${response.statusText}`);
+            }
+            
+            // AllOrigins থেকে ডেটা সরাসরি JSON হিসেবে আসে যদি মূল API JSON দেয়
+            const data = await response.json(); 
+            console.log("API Response Data:", data);
 
-                if (joinText) {
-                    joinInfoP.textContent = `যোগাযোগ/সাপোর্ট: ${joinText}`;
+
+            loader.style.display = 'none';
+
+            if (data.success && data.result && data.result.length > 0) {
+                displayResults(data.result, data.join, data.support);
+            } else if (data.message) { 
+                showError(data.message || 'ভিডিও খুঁজে পাওয়া যায়নি বা কোনো ত্রুটি হয়েছে।');
+            } else {
+                // যদি success:false আসে কিন্তু কোনো মেসেজ না থাকে
+                if (data.hasOwnProperty('success') && !data.success) {
+                     showError('API থেকে সফল উত্তর পাওয়া যায়নি। অনুগ্রহ করে লিঙ্কটি পরীক্ষা করুন।');
+                } else {
+                    showError('ভিডিও খুঁজে পাওয়া যায়নি বা কোনো অজানা ত্রুটি হয়েছে। API থেকে সঠিক ফরম্যাটে ডেটা আসেনি।');
                 }
             }
+        } catch (error) {
+            loader.style.display = 'none';
+            console.error('Fetch operation error:', error); // বিস্তারিত এরর কনসোলে দেখুন
+            showError(`একটি ত্রুটি ঘটেছে: ${error.message}. অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন অথবা আপনার ইন্টারনেট সংযোগ পরীক্ষা করুন।`);
+        }
+    });
 
-            function showError(message) {
-                errorMessagesDiv.innerHTML = `<p class="error-text">${message}</p>`;
-            }
+    function isValidInstagramUrl(url) {
+        const instagramRegex = /^(https?:\/\/)?(www\.)?instagram\.com\/(p|reel|tv|stories|videos)\/[a-zA-Z0-9\-_]+\/?([\?#].*)?$/;
+        return instagramRegex.test(url);
+    }
 
-            function clearResultsAndErrors() {
-                resultsDiv.innerHTML = '';
-                errorMessagesDiv.innerHTML = '';
+    function displayResults(results, joinText, supportText) {
+        resultsDiv.innerHTML = '';
+        let videoFound = false;
+        results.forEach(item => {
+            if (item.type === 'video' && item.url) {
+                videoFound = true;
+                const resultItemDiv = document.createElement('div');
+                resultItemDiv.classList.add('result-item');
+
+                let thumbnailHtml = '';
+                if (item.thumb) {
+                    thumbnailHtml = `
+                        <div class="thumbnail-container">
+                            <img src="${item.thumb}" alt="ভিডিও থাম্বনেইল" class="video-thumbnail" onerror="this.style.display='none';">
+                        </div>
+                    `;
+                }
+
+                const videoTitle = item.filename ? item.filename.replace(/\.mp4$/i, '').replace(/[^a-zA-Z0-9\sঅ-ঔক-য়ًا-يÀ-ÖØ-öø-ÿ]/g, ' ').substring(0, 70) + (item.filename.length > 70 ? '...' : '') : 'ইনস্টাগ্রাম ভিডিও';
+                
+                const resultItemContent = document.createElement('div');
+                resultItemContent.classList.add('result-item-content');
+
+                resultItemContent.innerHTML = `
+                    ${thumbnailHtml}
+                    <div class="video-info">
+                        <p class="video-title">${videoTitle}</p>
+                        <a href="${item.url}" target="_blank" download="${videoTitle.replace(/\s+/g, '_') || 'instagram_video'}.mp4" class="download-link-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            ডাউনলোড করুন
+                        </a>
+                    </div>
+                `;
+                resultItemDiv.appendChild(resultItemContent);
+                resultsDiv.appendChild(resultItemDiv);
             }
         });
+
+        if (!videoFound && results.length > 0 && results[0].type !== 'video') {
+             showError('দুঃখিত, এই লিঙ্ক থেকে কোনো ভিডিও খুঁজে পাওয়া যায়নি। এটি ছবি বা অন্য কোনো ধরনের মিডিয়া হতে পারে যা বর্তমানে সমর্থিত নয়।');
+        } else if (!videoFound && results.length === 0) {
+             showError('কোনো মিডিয়া খুঁজে পাওয়া যায়নি।');
+        }
+
+        if (joinText) {
+            joinInfoP.textContent = `যোগাযোগ/সাপোর্ট: ${joinText}`;
+        }
+    }
+
+    function showError(message) {
+        errorMessagesDiv.innerHTML = `<p class="error-text">${message}</p>`;
+    }
+
+    function clearResultsAndErrors() {
+        resultsDiv.innerHTML = '';
+        errorMessagesDiv.innerHTML = '';
+    }
+});
+
     </script>
 </body>
-</html>
+    </html>
