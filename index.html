@@ -272,7 +272,7 @@
         <footer>
             <p id="joinInfo"></p>
             <p id="supportInfo"></p>
-            <p>&copy; <span id="year"></span> আপনার ওয়েবসাইট (উদাহরণ)। সর্বস্বত্ব সংরক্ষিত।</p>
+            <p>&copy; <span id="year"></span> @SHOHAG VAII । সর্বস্বত্ব সংরক্ষিত।</p>
             <p style="font-size: 0.8em; color: #90949c;">দয়া করে মনে রাখবেন: এই API (`bj-devs.serv00.net`) একটি থার্ড-পার্টি পরিষেবা। এর প্রাপ্যতা এবং কার্যকারিতা পরিবর্তন হতে পারে। সর্বদা কপিরাইট আইন মেনে চলুন।</p>
         </footer>
     </div>
@@ -290,11 +290,16 @@
 
             downloadBtn.addEventListener('click', async () => {
                 const igUrl = instagramUrlInput.value.trim();
+                
+                // DEBUGGING: Log the URL to the console
+                console.log("Validating URL:", igUrl); 
+
                 if (!igUrl) {
                     showError('অনুগ্রহ করে একটি ইনস্টাগ্রাম ভিডিও লিঙ্ক প্রবেশ করান।');
                     return;
                 }
 
+                // Validate Instagram URL (basic check)
                 if (!isValidInstagramUrl(igUrl)) {
                     showError('অনুগ্রহ করে একটি সঠিক ইনস্টাগ্রাম ভিডিও লিঙ্ক দিন (যেমন: https://www.instagram.com/reel/...)');
                     return;
@@ -311,7 +316,6 @@
                 try {
                     const response = await fetch(apiUrl);
                     if (!response.ok) {
-                         // Try to parse error from API if available
                         let errorData;
                         try {
                             errorData = await response.json();
@@ -329,10 +333,9 @@
 
                     if (data.success && data.result && data.result.length > 0) {
                         displayResults(data.result, data.join, data.support);
-                    } else if (data.message) { // Handle cases where success might be false but a message is present
+                    } else if (data.message) { 
                         showError(data.message || 'ভিডিও খুঁজে পাওয়া যায়নি বা কোনো ত্রুটি হয়েছে।');
-                    }
-                     else {
+                    } else {
                         showError('ভিডিও খুঁজে পাওয়া যায়নি বা কোনো অজানা ত্রুটি হয়েছে।');
                     }
                 } catch (error) {
@@ -343,14 +346,26 @@
             });
 
             function isValidInstagramUrl(url) {
-                const instagramRegex = /^(https?:\/\/)?(www\.)?instagram\.com\/(p|reel|tv|stories)\/[a-zA-Z0-9\-_]+(\/[0-9]+\/?)?(\?.*)?$/;
+                // UPDATED Regular Expression:
+                const instagramRegex = /^(https?:\/\/)?(www\.)?instagram\.com\/(p|reel|tv|stories|videos)\/[a-zA-Z0-9\-_]+\/?([\?#].*)?$/;
+                // This regex now includes 'videos' as a possible path, and simplifies the ending.
+                // It matches:
+                // - Optional http/https
+                // - Optional www.
+                // - instagram.com/
+                // - p/ or reel/ or tv/ or stories/ or videos/
+                // - The post ID (alphanumeric, hyphen, underscore)
+                // - Optional trailing slash
+                // - Optional query string (starting with ?) or fragment (starting with #)
                 return instagramRegex.test(url);
             }
 
             function displayResults(results, joinText, supportText) {
                 resultsDiv.innerHTML = ''; // Clear previous results
+                let videoFound = false;
                 results.forEach(item => {
                     if (item.type === 'video' && item.url) {
+                        videoFound = true;
                         const resultItemDiv = document.createElement('div');
                         resultItemDiv.classList.add('result-item');
 
@@ -380,18 +395,19 @@
                         `;
                         resultItemDiv.appendChild(resultItemContent);
                         resultsDiv.appendChild(resultItemDiv);
-                    } else {
-                         showError('দুঃখিত, এই লিঙ্ক থেকে ভিডিও পাওয়া যায়নি। এটি কোনো ছবি বা স্টোরি হতে পারে যা এই মুহূর্তে সাপোর্ট করছে না।');
                     }
                 });
 
-                if (joinText) {
-                    joinInfoP.textContent = `যোগাযোগ/সাপোর্ট: ${joinText}`; // Combined join and support for simplicity
+                if (!videoFound && results.length > 0 && results[0].type !== 'video') {
+                     showError('দুঃখিত, এই লিঙ্ক থেকে কোনো ভিডিও খুঁজে পাওয়া যায়নি। এটি ছবি বা অন্য কোনো ধরনের মিডিয়া হতে পারে যা বর্তমানে সমর্থিত নয়।');
+                } else if (!videoFound && results.length === 0) {
+                     showError('কোনো মিডিয়া খুঁজে পাওয়া যায়নি।');
                 }
-                // if (supportText) { // API has same value for join and support in example.
-                //    supportInfoP.textContent = `সাপোর্ট: ${supportText}`;
-                // }
 
+
+                if (joinText) {
+                    joinInfoP.textContent = `যোগাযোগ/সাপোর্ট: ${joinText}`;
+                }
             }
 
             function showError(message) {
